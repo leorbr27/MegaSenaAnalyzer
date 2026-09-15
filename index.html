@@ -101,7 +101,7 @@ input,select,textarea{
 }
 
 textarea{
-    min-height:90px;
+    min-height:120px;
     resize:vertical;
 }
 
@@ -274,6 +274,15 @@ th{
     background:#fff0f0;
     border:1px solid #e3aaaa;
     color:#8d1f1f;
+    margin-top:12px;
+}
+
+.info-box{
+    padding:12px;
+    border-radius:9px;
+    background:#eef6ff;
+    border:1px solid #bdd8f0;
+    color:#174b73;
     margin-top:12px;
 }
 
@@ -457,7 +466,38 @@ O sistema utilizará o orçamento disponível para gerar os jogos que serão efe
 </section>
 
 
-<!-- RESUMO -->
+<!-- JOGOS DIGITADOS PELO USUÁRIO -->
+<section class="card">
+<h2>✍️ Meus jogos</h2>
+
+<p>
+Você também pode informar jogos que já possui.
+Digite <strong>um jogo por linha</strong>, com 6 a 20 números.
+Separe os números por espaço, vírgula ou ponto e vírgula.
+</p>
+
+<div class="field">
+    <label>Jogos</label>
+
+    <textarea
+        id="manualGames"
+        placeholder="Exemplo:
+
+01 05 12 23 44 58
+03 14 22 31 47 59
+01 08 15 27 36 52 60"
+    ></textarea>
+</div>
+
+<div class="actions">
+    <button onclick="addManualGames()">➕ Adicionar meus jogos</button>
+</div>
+
+<div id="manualMessage"></div>
+</section>
+
+
+<!-- RESULTADOS -->
 <section id="resultsSection" class="hidden">
 
 <div class="card">
@@ -557,6 +597,7 @@ O sistema utilizará o orçamento disponível para gerar os jogos que serão efe
 <h3>Distribuição pelos quartis</h3>
 
 <div class="quartiles">
+
     <div class="q">
         Q1 — 01 a 15
         <strong id="q1">0</strong>
@@ -576,6 +617,7 @@ O sistema utilizará o orçamento disponível para gerar os jogos que serão efe
         Q4 — 46 a 60
         <strong id="q4">0</strong>
     </div>
+
 </div>
 
 <br>
@@ -633,8 +675,10 @@ do bolão acertariam Sena, Quina ou Quadra.
 
 <div class="field">
 <label>Números sorteados</label>
-<input id="drawResult"
-placeholder="Ex.: 05 12 23 34 45 58">
+<input
+    id="drawResult"
+    placeholder="Ex.: 05 12 23 34 45 58"
+>
 </div>
 
 <div class="actions">
@@ -647,6 +691,7 @@ placeholder="Ex.: 05 12 23 34 45 58">
 </section>
 
 </div>
+
 
 <footer>
 Mega Analyzer — ferramenta de planejamento estatístico de apostas.
@@ -666,14 +711,17 @@ let games = [];
 ========================= */
 
 function money(value){
+
     return Number(value || 0).toLocaleString('pt-BR',{
         style:'currency',
         currency:'BRL'
     });
 }
 
+
 function combination(n,k=6){
-    if(k>n) return 0;
+
+    if(k>n || n<0 || k<0) return 0;
 
     let result=1;
 
@@ -684,28 +732,38 @@ function combination(n,k=6){
     return Math.round(result);
 }
 
+
 function shuffle(array){
+
     const a=[...array];
 
     for(let i=a.length-1;i>0;i--){
+
         const j=Math.floor(Math.random()*(i+1));
+
         [a[i],a[j]]=[a[j],a[i]];
     }
 
     return a;
 }
 
+
 function sortNumbers(numbers){
+
     return [...numbers].sort((a,b)=>a-b);
 }
 
+
 function formatNumbers(numbers){
+
     return sortNumbers(numbers)
         .map(n=>String(n).padStart(2,'0'))
         .join(' ');
 }
 
+
 function parseNumbers(text){
+
     return text
         .replace(/,/g,' ')
         .replace(/;/g,' ')
@@ -714,8 +772,21 @@ function parseNumbers(text){
         .filter(n=>Number.isInteger(n) && n>=1 && n<=60);
 }
 
+
 function uniqueNumbers(numbers){
+
     return [...new Set(numbers)];
+}
+
+
+function escapeHTML(text){
+
+    return String(text)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#039;');
 }
 
 
@@ -736,6 +807,7 @@ function addParticipant(name='',quotas=1){
     renderParticipants();
 }
 
+
 function removeParticipant(id){
 
     participants=participants.filter(p=>p.id!==id);
@@ -743,13 +815,14 @@ function removeParticipant(id){
     renderParticipants();
 }
 
+
 function renderParticipants(){
 
     const box=document.getElementById('participants');
 
     box.innerHTML='';
 
-    participants.forEach((p,index)=>{
+    participants.forEach(p=>{
 
         const row=document.createElement('div');
 
@@ -781,6 +854,7 @@ function renderParticipants(){
     updateSummary();
 }
 
+
 function updateParticipant(id,key,value){
 
     const p=participants.find(x=>x.id===id);
@@ -789,167 +863,238 @@ function updateParticipant(id,key,value){
 
     if(key==='quotas'){
         p.quotas=Math.max(1,Number(value)||1);
-    }else{
+    }
+    else{
         p[key]=value;
     }
 
     updateSummary();
 }
 
+
 function updateSummary(){
 
-    const quotas=participants.reduce((sum,p)=>sum+Number(p.quotas||0),0);
+    const quotas=participants.reduce(
+        (sum,p)=>sum+Number(p.quotas||0),
+        0
+    );
 
-    const quotaValue=Number(document.getElementById('quotaValue').value)||0;
+    const quotaValue=
+        Number(document.getElementById('quotaValue').value)||0;
 
-    const budgetInput=document.getElementById('betBudget');
+    const budgetInput=
+        document.getElementById('betBudget');
 
-    if(document.activeElement!==budgetInput && quotas>0){
-        budgetInput.value=(quotas*quotaValue).toFixed(2);
+    if(
+        document.activeElement!==budgetInput &&
+        quotas>0
+    ){
+
+        budgetInput.value=
+            (quotas*quotaValue).toFixed(2);
     }
 
-    const budget=Number(budgetInput.value)||0;
+    const budget=
+        Number(budgetInput.value)||0;
 
-    document.getElementById('participantCount').textContent=participants.length;
-    document.getElementById('quotaCount').textContent=quotas;
-    document.getElementById('quotaValueDisplay').textContent=money(quotaValue);
-    document.getElementById('budgetDisplay').textContent=money(budget);
-}
+    document.getElementById('participantCount')
+        .textContent=participants.length;
 
-function escapeHTML(text){
+    document.getElementById('quotaCount')
+        .textContent=quotas;
 
-    return String(text)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#039;');
+    document.getElementById('quotaValueDisplay')
+        .textContent=money(quotaValue);
+
+    document.getElementById('budgetDisplay')
+        .textContent=money(budget);
 }
 
 
 /* =========================
-   ESTRATÉGIA
+   SUGESTÃO DE ESTRATÉGIA
 ========================= */
 
 function suggestStrategy(){
 
-    const quotas=participants.reduce((sum,p)=>sum+Number(p.quotas||0),0);
+    const quotas=participants.reduce(
+        (sum,p)=>sum+Number(p.quotas||0),
+        0
+    );
 
-    const quotaValue=Number(document.getElementById('quotaValue').value)||0;
+    const quotaValue=
+        Number(document.getElementById('quotaValue').value)||0;
 
-    const budgetInput=document.getElementById('betBudget');
+    const budgetInput=
+        document.getElementById('betBudget');
 
     if(quotas>0){
-        budgetInput.value=(quotas*quotaValue).toFixed(2);
+        budgetInput.value=
+            (quotas*quotaValue).toFixed(2);
     }
 
-    const budget=Number(budgetInput.value)||0;
+    const budget=
+        Number(budgetInput.value)||0;
 
-    const price=Number(document.getElementById('simpleBetPrice').value)||5;
+    const price=
+        Number(document.getElementById('simpleBetPrice').value)||5;
 
     if(price<=0){
-        alert('Informe um valor válido para a aposta simples.');
+
+        alert(
+            'Informe um valor válido para a aposta simples.'
+        );
+
         return;
     }
 
     const games6=Math.floor(budget/price);
 
-    document.getElementById('strategy').value='maximum';
+    /*
+      IMPORTANTE:
+      A função não altera mais o campo
+      "Estratégia".
+    */
+
     document.getElementById('sixGames').value=games6;
     document.getElementById('multipleGames').value=0;
 
     document.getElementById('generationMessage').innerHTML=`
         <div class="success">
-            Com <strong>${money(budget)}</strong>, a sugestão atual é gerar
-            <strong>${games6}</strong> jogos simples de 6 números.
+            Sugestão calculada com base no orçamento atual:
+            <strong>${money(budget)}</strong>
+            permite até
+            <strong>${games6}</strong>
+            jogos simples de 6 números.
+            <br><br>
+            A opção <strong>Estratégia</strong> não foi alterada.
         </div>
     `;
 }
 
 
 /* =========================
-   GERAÇÃO
+   GERAÇÃO DE JOGOS
 ========================= */
 
 function generateGames(){
 
     games=[];
 
-    const budget=Number(document.getElementById('betBudget').value)||0;
-    const price6=Number(document.getElementById('simpleBetPrice').value)||5;
+    const budget=
+        Number(document.getElementById('betBudget').value)||0;
 
-    let sixGames=Number(document.getElementById('sixGames').value)||0;
-    let multipleGames=Number(document.getElementById('multipleGames').value)||0;
-    let multipleNumbers=Number(document.getElementById('multipleNumbers').value)||7;
+    const price6=
+        Number(document.getElementById('simpleBetPrice').value)||5;
 
-    const strategy=document.getElementById('strategy').value;
+    let sixGames=
+        Number(document.getElementById('sixGames').value)||0;
+
+    let multipleGames=
+        Number(document.getElementById('multipleGames').value)||0;
+
+    let multipleNumbers=
+        Number(document.getElementById('multipleNumbers').value)||7;
+
+    const strategy=
+        document.getElementById('strategy').value;
+
 
     if(budget<=0){
+
         alert('Informe um orçamento disponível.');
+
         return;
     }
 
+
     if(price6<=0){
+
         alert('Informe o valor da aposta simples.');
+
         return;
     }
+
+
+    /*
+      A estratégia escolhida pelo usuário
+      continua sendo respeitada.
+    */
 
     if(strategy!=='custom'){
 
         if(strategy==='maximum'){
 
-            sixGames=Math.floor(budget/price6);
+            sixGames=
+                Math.floor(budget/price6);
+
             multipleGames=0;
         }
 
+
         if(strategy==='mixed'){
 
-            const multiplePrice=combination(8)*price6;
+            const multiplePrice=
+                combination(8)*price6;
 
             multipleGames=Math.min(
                 3,
                 Math.floor(budget/multiplePrice)
             );
 
-            const used=multipleGames*multiplePrice;
+            const used=
+                multipleGames*multiplePrice;
 
-            sixGames=Math.floor((budget-used)/price6);
+            sixGames=
+                Math.floor((budget-used)/price6);
+
             multipleNumbers=8;
         }
 
+
         if(strategy==='multiple'){
 
-            multipleNumbers=Number(document.getElementById('multipleNumbers').value)||7;
+            multipleNumbers=
+                Number(
+                    document.getElementById(
+                        'multipleNumbers'
+                    ).value
+                )||7;
 
-            const multiplePrice=combination(multipleNumbers)*price6;
+            const multiplePrice=
+                combination(multipleNumbers)*price6;
 
             multipleGames=Math.min(
                 5,
                 Math.floor(budget/multiplePrice)
             );
 
-            const used=multipleGames*multiplePrice;
+            const used=
+                multipleGames*multiplePrice;
 
-            sixGames=Math.floor((budget-used)/price6);
+            sixGames=
+                Math.floor((budget-used)/price6);
         }
-
     }
 
+
     if(sixGames<0) sixGames=0;
+
     if(multipleGames<0) multipleGames=0;
 
-    const costMultiple=combination(multipleNumbers)*price6;
+
+    const costMultiple=
+        combination(multipleNumbers)*price6;
 
     let totalCost=
         sixGames*price6+
         multipleGames*costMultiple;
 
-    /*
-      Caso a estratégia personalizada ultrapasse
-      o orçamento, reduz os jogos múltiplos.
-    */
 
-    while(totalCost>budget && multipleGames>0){
+    while(
+        totalCost>budget &&
+        multipleGames>0
+    ){
 
         multipleGames--;
 
@@ -958,7 +1103,11 @@ function generateGames(){
             multipleGames*costMultiple;
     }
 
-    while(totalCost>budget && sixGames>0){
+
+    while(
+        totalCost>budget &&
+        sixGames>0
+    ){
 
         sixGames--;
 
@@ -967,9 +1116,16 @@ function generateGames(){
             multipleGames*costMultiple;
     }
 
-    const mode=document.getElementById('generationMode').value;
 
-    const usedSixCombinations=new Set();
+    const mode=
+        document.getElementById(
+            'generationMode'
+        ).value;
+
+
+    const usedSixCombinations=
+        new Set();
+
 
     /*
       Jogos simples
@@ -977,17 +1133,19 @@ function generateGames(){
 
     for(let i=0;i<sixGames;i++){
 
-        const numbers=generateUniqueGame(
-            6,
-            mode,
-            usedSixCombinations
-        );
+        const numbers=
+            generateUniqueGame(
+                6,
+                mode,
+                usedSixCombinations
+            );
 
         games.push({
             type:'6 números',
             numbers,
             combinations:1,
-            cost:price6
+            cost:price6,
+            origin:'Gerado pelo sistema'
         });
     }
 
@@ -998,40 +1156,65 @@ function generateGames(){
 
     for(let i=0;i<multipleGames;i++){
 
-        const numbers=generateUniqueGame(
-            multipleNumbers,
-            mode,
-            usedSixCombinations
-        );
+        const numbers=
+            generateUniqueGame(
+                multipleNumbers,
+                mode,
+                usedSixCombinations
+            );
 
         games.push({
             type:`${multipleNumbers} números`,
             numbers,
-            combinations:combination(multipleNumbers),
-            cost:combination(multipleNumbers)*price6
+            combinations:
+                combination(multipleNumbers),
+            cost:
+                combination(multipleNumbers)*price6,
+            origin:'Gerado pelo sistema'
         });
 
-        /*
-          Registra todas as combinações de 6
-          presentes dentro do jogo múltiplo.
-        */
-
-        registerCombinations(numbers,usedSixCombinations);
+        registerCombinations(
+            numbers,
+            usedSixCombinations
+        );
     }
+
 
     renderGames();
     analyzeGames();
 
-    document.getElementById('resultsSection').classList.remove('hidden');
+    document.getElementById(
+        'resultsSection'
+    ).classList.remove('hidden');
 
-    const combinationsTotal=games.reduce(
-        (sum,g)=>sum+g.combinations,0
-    );
 
-    document.getElementById('generationMessage').innerHTML=`
+    const combinationsTotal=
+        games.reduce(
+            (sum,g)=>sum+g.combinations,
+            0
+        );
+
+
+    let modeName='Aleatório';
+
+    if(mode==='balanced'){
+        modeName='Balanceado';
+    }
+
+    if(mode==='diversified'){
+        modeName='Diversificação máxima';
+    }
+
+
+    document.getElementById(
+        'generationMessage'
+    ).innerHTML=`
         <div class="success">
-            Jogos gerados com sucesso:
-            <strong>${games.length}</strong> apostas,
+            Jogos gerados com sucesso usando o modo
+            <strong>${modeName}</strong>.
+            <br><br>
+            <strong>${games.length}</strong>
+            apostas,
             representando
             <strong>${combinationsTotal.toLocaleString('pt-BR')}</strong>
             combinações de 6 números.
@@ -1040,7 +1223,15 @@ function generateGames(){
 }
 
 
-function generateUniqueGame(size,mode,used){
+/* =========================
+   GERAÇÃO DE UM JOGO
+========================= */
+
+function generateUniqueGame(
+    size,
+    mode,
+    used
+){
 
     let attempts=0;
 
@@ -1048,24 +1239,50 @@ function generateUniqueGame(size,mode,used){
 
         let numbers;
 
+
         if(mode==='random'){
-            numbers=randomNumbers(size);
+
+            /*
+              Modo totalmente aleatório.
+            */
+
+            numbers=
+                randomNumbers(size);
         }
+
+
         else if(mode==='balanced'){
-            numbers=balancedNumbers(size);
+
+            /*
+              Modo balanceado.
+            */
+
+            numbers=
+                balancedNumbers(size);
         }
+
+
         else{
-            numbers=diversifiedNumbers(size,used);
+
+            /*
+              Diversificação máxima.
+            */
+
+            numbers=
+                diversifiedNumbers(
+                    size,
+                    used
+                );
         }
 
-        numbers=sortNumbers(numbers);
 
-        const key=numbers.join('-');
+        numbers=
+            sortNumbers(numbers);
 
-        /*
-          Para jogos completos, não permite
-          duplicidade exata.
-        */
+
+        const key=
+            numbers.join('-');
+
 
         if(!used.has(key)){
 
@@ -1074,16 +1291,20 @@ function generateUniqueGame(size,mode,used){
             return numbers;
         }
 
+
         attempts++;
     }
 
-    /*
-      fallback
-    */
 
-    return sortNumbers(randomNumbers(size));
+    return sortNumbers(
+        randomNumbers(size)
+    );
 }
 
+
+/* =========================
+   ALEATÓRIO
+========================= */
 
 function randomNumbers(size){
 
@@ -1097,154 +1318,500 @@ function randomNumbers(size){
 }
 
 
+/* =========================
+   BALANCEADO
+========================= */
+
 function balancedNumbers(size){
 
-    const groups=[
-        [1,15],
-        [16,30],
-        [31,45],
-        [46,60]
-    ];
-
-    let result=[];
-
-    /*
-      Distribui os números aproximadamente
-      entre os quatro quartis.
-    */
-
-    for(let i=0;i<size;i++){
-
-        const q=i%4;
-        const [min,max]=groups[q];
-
-        let n;
-
-        do{
-            n=min+Math.floor(Math.random()*(max-min+1));
-        }while(result.includes(n));
-
-        result.push(n);
-    }
-
-    /*
-      Corrige quantidade caso algum quartil
-      tenha ficado limitado.
-    */
-
-    while(result.length<size){
-
-        const n=1+Math.floor(Math.random()*60);
-
-        if(!result.includes(n)){
-            result.push(n);
-        }
-    }
-
-    return result;
-}
-
-
-function diversifiedNumbers(size,used){
-
     let best=null;
-    let bestScore=-Infinity;
 
-    for(let attempt=0;attempt<50;attempt++){
+    let bestScore=Infinity;
 
-        const candidate=balancedNumbers(size);
+
+    /*
+      Cria várias possibilidades e escolhe
+      a que mais se aproxima de uma distribuição
+      equilibrada.
+    */
+
+    for(let attempt=0;attempt<80;attempt++){
+
+        const candidate=
+            randomNumbers(size);
+
+
+        const numbers=
+            sortNumbers(candidate);
+
+
+        const q=[
+            numbers.filter(n=>n<=15).length,
+            numbers.filter(n=>n>=16&&n<=30).length,
+            numbers.filter(n=>n>=31&&n<=45).length,
+            numbers.filter(n=>n>=46).length
+        ];
+
+
+        const even=
+            numbers.filter(n=>n%2===0).length;
+
+        const odd=
+            numbers.length-even;
+
+
+        const sum=
+            numbers.reduce(
+                (a,b)=>a+b,
+                0
+            );
+
 
         let score=0;
 
+
         /*
-          Valoriza números que aparecem menos
-          nos jogos anteriores.
+          Distribuição entre quartis.
+        */
+
+        const ideal=size/4;
+
+        q.forEach(value=>{
+            score+=
+                Math.pow(
+                    value-ideal,
+                    2
+                )*10;
+        });
+
+
+        /*
+          Pares/ímpares.
+        */
+
+        score+=
+            Math.abs(even-odd)*8;
+
+
+        /*
+          Soma próxima do centro
+          matemático aproximado.
+        */
+
+        const idealSum=
+            size*30.5;
+
+        score+=
+            Math.abs(sum-idealSum)/4;
+
+
+        /*
+          Penaliza sequências longas.
+        */
+
+        let sequence=0;
+
+        for(let i=1;i<numbers.length;i++){
+
+            if(
+                numbers[i]-
+                numbers[i-1]===1
+            ){
+
+                sequence++;
+            }
+        }
+
+        score+=sequence*12;
+
+
+        if(score<bestScore){
+
+            bestScore=score;
+            best=numbers;
+        }
+    }
+
+
+    return best || randomNumbers(size);
+}
+
+
+/* =========================
+   DIVERSIFICAÇÃO
+========================= */
+
+function diversifiedNumbers(
+    size,
+    used
+){
+
+    let best=null;
+
+    let bestScore=Infinity;
+
+
+    /*
+      Para diversificação, testamos
+      várias combinações candidatas.
+    */
+
+    for(let attempt=0;attempt<150;attempt++){
+
+        const candidate=
+            sortNumbers(
+                randomNumbers(size)
+            );
+
+
+        let score=0;
+
+
+        /*
+          Penaliza números que já aparecem
+          muitas vezes nos jogos existentes.
         */
 
         candidate.forEach(n=>{
 
             let occurrence=0;
 
-            games.forEach(g=>{
-                if(g.numbers.includes(n)){
+
+            games.forEach(game=>{
+
+                if(
+                    game.numbers.includes(n)
+                ){
+
                     occurrence++;
                 }
             });
 
-            score-=occurrence*2;
+
+            score+=
+                occurrence*15;
         });
 
+
         /*
-          Evita excesso de sequência.
+          Penaliza sobreposição com
+          jogos já gerados.
         */
 
-        for(let i=1;i<candidate.length;i++){
+        games.forEach(game=>{
 
-            if(Math.abs(candidate[i]-candidate[i-1])===1){
-                score-=3;
+            const overlap=
+                candidate.filter(
+                    n=>game.numbers.includes(n)
+                ).length;
+
+
+            score+=
+                Math.pow(overlap,2)*5;
+        });
+
+
+        /*
+          Penaliza sequências.
+        */
+
+        for(
+            let i=1;
+            i<candidate.length;
+            i++
+        ){
+
+            if(
+                candidate[i]-
+                candidate[i-1]===1
+            ){
+
+                score+=20;
             }
         }
 
+
         /*
-          Incentiva soma central.
+          Também evita concentração
+          exagerada em um quartil.
         */
 
-        const sum=candidate.reduce((a,b)=>a+b,0);
+        const q=[
+            candidate.filter(n=>n<=15).length,
+            candidate.filter(
+                n=>n>=16&&n<=30
+            ).length,
+            candidate.filter(
+                n=>n>=31&&n<=45
+            ).length,
+            candidate.filter(
+                n=>n>=46
+            ).length
+        ];
 
-        score-=Math.abs(sum-183)/10;
 
-        if(score>bestScore){
+        const maxQ=Math.max(...q);
+
+        const minQ=Math.min(...q);
+
+
+        score+=
+            Math.max(
+                0,
+                maxQ-minQ-2
+            )*10;
+
+
+        if(score<bestScore){
 
             bestScore=score;
             best=candidate;
         }
     }
 
-    return best || randomNumbers(size);
+
+    return best ||
+        randomNumbers(size);
 }
 
 
-/*
-  Registra combinações de 6 de um jogo múltiplo.
-*/
+/* =========================
+   JOGOS MANUAIS
+========================= */
 
-function registerCombinations(numbers,set){
+function addManualGames(){
+
+    const text=
+        document.getElementById(
+            'manualGames'
+        ).value.trim();
+
+
+    if(!text){
+
+        alert(
+            'Digite pelo menos um jogo.'
+        );
+
+        return;
+    }
+
+
+    const lines=
+        text
+        .split(/\n/)
+        .map(line=>line.trim())
+        .filter(Boolean);
+
+
+    let added=0;
+    let ignored=0;
+
+
+    lines.forEach(line=>{
+
+        const numbers=
+            uniqueNumbers(
+                parseNumbers(line)
+            );
+
+
+        /*
+          Um jogo precisa ter
+          de 6 a 20 números.
+        */
+
+        if(
+            numbers.length<6 ||
+            numbers.length>20
+        ){
+
+            ignored++;
+
+            return;
+        }
+
+
+        const sorted=
+            sortNumbers(numbers);
+
+
+        /*
+          Evita duplicidade exata.
+        */
+
+        const exists=
+            games.some(
+                game=>
+                    formatNumbers(
+                        game.numbers
+                    )===
+                    formatNumbers(sorted)
+            );
+
+
+        if(exists){
+
+            ignored++;
+
+            return;
+        }
+
+
+        const price6=
+            Number(
+                document.getElementById(
+                    'simpleBetPrice'
+                ).value
+            )||5;
+
+
+        games.push({
+
+            type:
+                `${sorted.length} números`,
+
+            numbers:
+                sorted,
+
+            combinations:
+                combination(
+                    sorted.length
+                ),
+
+            cost:
+                combination(
+                    sorted.length
+                )*price6,
+
+            origin:
+                'Digitado pelo usuário'
+        });
+
+
+        added++;
+    });
+
+
+    if(!added && ignored){
+
+        document.getElementById(
+            'manualMessage'
+        ).innerHTML=`
+            <div class="danger">
+                Nenhum jogo novo foi adicionado.
+                Verifique se os jogos possuem entre
+                6 e 20 números e se não são duplicados.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    if(games.length){
+
+        renderGames();
+        analyzeGames();
+
+        document.getElementById(
+            'resultsSection'
+        ).classList.remove('hidden');
+    }
+
+
+    document.getElementById(
+        'manualMessage'
+    ).innerHTML=`
+        <div class="success">
+            <strong>${added}</strong>
+            jogo(s) adicionado(s).
+            ${ignored>0
+                ? `<br>${ignored} linha(s) ignorada(s).`
+                : ''
+            }
+        </div>
+    `;
+
+
+    document.getElementById(
+        'manualGames'
+    ).value='';
+}
+
+
+/* =========================
+   COMBINAÇÕES
+========================= */
+
+function registerCombinations(
+    numbers,
+    set
+){
 
     if(numbers.length<6) return;
 
-    const combos=generateCombinations(numbers,6);
+
+    const combos=
+        generateCombinations(
+            numbers,
+            6
+        );
+
 
     combos.forEach(c=>{
-        set.add(sortNumbers(c).join('-'));
+
+        set.add(
+            sortNumbers(c).join('-')
+        );
     });
 }
 
 
-/*
-  Gera combinações.
-*/
-
-function generateCombinations(array,size){
+function generateCombinations(
+    array,
+    size
+){
 
     const result=[];
 
-    function recurse(start,current){
 
-        if(current.length===size){
+    function recurse(
+        start,
+        current
+    ){
 
-            result.push([...current]);
+        if(
+            current.length===size
+        ){
+
+            result.push(
+                [...current]
+            );
+
             return;
         }
 
-        for(let i=start;i<array.length;i++){
 
-            current.push(array[i]);
+        for(
+            let i=start;
+            i<array.length;
+            i++
+        ){
 
-            recurse(i+1,current);
+            current.push(
+                array[i]
+            );
+
+            recurse(
+                i+1,
+                current
+            );
 
             current.pop();
         }
     }
+
 
     recurse(0,[]);
 
@@ -1258,44 +1825,101 @@ function generateCombinations(array,size){
 
 function renderGames(){
 
-    const tbody=document.getElementById('gamesTable');
+    const tbody=
+        document.getElementById(
+            'gamesTable'
+        );
+
 
     tbody.innerHTML='';
 
-    games.forEach((game,index)=>{
 
-        const numbers=sortNumbers(game.numbers);
+    games.forEach(
+        (game,index)=>{
 
-        const even=numbers.filter(n=>n%2===0).length;
-        const odd=numbers.length-even;
+        const numbers=
+            sortNumbers(
+                game.numbers
+            );
 
-        const sum=numbers.reduce((a,b)=>a+b,0);
+
+        const even=
+            numbers.filter(
+                n=>n%2===0
+            ).length;
+
+
+        const odd=
+            numbers.length-even;
+
+
+        const sum=
+            numbers.reduce(
+                (a,b)=>a+b,
+                0
+            );
+
 
         const q=[
-            numbers.filter(n=>n<=15).length,
-            numbers.filter(n=>n>=16&&n<=30).length,
-            numbers.filter(n=>n>=31&&n<=45).length,
-            numbers.filter(n=>n>=46).length
+            numbers.filter(
+                n=>n<=15
+            ).length,
+
+            numbers.filter(
+                n=>n>=16&&n<=30
+            ).length,
+
+            numbers.filter(
+                n=>n>=31&&n<=45
+            ).length,
+
+            numbers.filter(
+                n=>n>=46
+            ).length
         ];
 
-        const tr=document.createElement('tr');
+
+        const tr=
+            document.createElement(
+                'tr'
+            );
+
 
         tr.innerHTML=`
+
             <td>${index+1}</td>
 
             <td>
-                <span class="badge">${game.type}</span>
+
+                <span class="badge">
+                    ${escapeHTML(game.type)}
+                </span>
+
+                <br>
+
+                <small>
+                    ${escapeHTML(game.origin || '')}
+                </small>
+
             </td>
 
             <td>
+
                 ${numbers.map(n=>`
+
                     <span class="number-ball">
+
                         ${String(n).padStart(2,'0')}
+
                     </span>
+
                 `).join('')}
+
             </td>
 
-            <td>${game.combinations.toLocaleString('pt-BR')}</td>
+            <td>
+                ${game.combinations.toLocaleString('pt-BR')}
+            </td>
 
             <td>${sum}</td>
 
@@ -1306,37 +1930,85 @@ function renderGames(){
             <td>${q.join(' / ')}</td>
         `;
 
+
         tbody.appendChild(tr);
     });
 
-    const simple=games.filter(g=>g.numbers.length===6).length;
 
-    const multiple=games.length-simple;
+    const simple=
+        games.filter(
+            g=>g.numbers.length===6
+        ).length;
 
-    const combinationsTotal=games.reduce(
-        (sum,g)=>sum+g.combinations,0
-    );
 
-    const cost=games.reduce(
-        (sum,g)=>sum+g.cost,0
-    );
+    const multiple=
+        games.length-simple;
 
-    document.getElementById('resultSimple').textContent=simple;
-    document.getElementById('resultMultiple').textContent=multiple;
-    document.getElementById('resultCombinations').textContent=
-        combinationsTotal.toLocaleString('pt-BR');
-    document.getElementById('resultCost').textContent=money(cost);
+
+    const combinationsTotal=
+        games.reduce(
+            (sum,g)=>
+                sum+g.combinations,
+            0
+        );
+
+
+    const cost=
+        games.reduce(
+            (sum,g)=>
+                sum+g.cost,
+            0
+        );
+
+
+    document.getElementById(
+        'resultSimple'
+    ).textContent=simple;
+
+
+    document.getElementById(
+        'resultMultiple'
+    ).textContent=multiple;
+
+
+    document.getElementById(
+        'resultCombinations'
+    ).textContent=
+        combinationsTotal.toLocaleString(
+            'pt-BR'
+        );
+
+
+    document.getElementById(
+        'resultCost'
+    ).textContent=
+        money(cost);
+
 
     const coverage=
-        combinationsTotal/combination(60,6)*100;
+        combinationsTotal/
+        combination(60,6)*100;
 
-    document.getElementById('coverageMessage').innerHTML=`
+
+    document.getElementById(
+        'coverageMessage'
+    ).innerHTML=`
+
         <div class="warning">
-            Cobertura teórica do universo de combinações:
-            <strong>${coverage.toFixed(6)}%</strong>.
-            Isso representa quantidade de combinações cobertas,
+
+            Cobertura teórica do universo
+            de combinações:
+
+            <strong>
+                ${coverage.toFixed(6)}%
+            </strong>.
+
+            Isso representa quantidade
+            de combinações cobertas,
             não uma garantia de premiação.
+
         </div>
+
     `;
 }
 
@@ -1349,124 +2021,267 @@ function analyzeGames(){
 
     if(!games.length) return;
 
+
     let totalSum=0;
     let totalEven=0;
     let totalOdd=0;
     let sequenceGames=0;
 
-    const quartiles=[0,0,0,0];
+
+    const quartiles=[
+        0,0,0,0
+    ];
+
 
     const frequency={};
 
+
     games.forEach(game=>{
 
-        const numbers=sortNumbers(game.numbers);
+        const numbers=
+            sortNumbers(
+                game.numbers
+            );
 
-        const sum=numbers.reduce((a,b)=>a+b,0);
+
+        const sum=
+            numbers.reduce(
+                (a,b)=>a+b,
+                0
+            );
+
 
         totalSum+=sum;
 
-        const even=numbers.filter(n=>n%2===0).length;
+
+        const even=
+            numbers.filter(
+                n=>n%2===0
+            ).length;
+
 
         totalEven+=even;
-        totalOdd+=numbers.length-even;
 
-        for(let i=0;i<numbers.length;i++){
+        totalOdd+=
+            numbers.length-even;
 
-            const n=numbers[i];
 
-            frequency[n]=(frequency[n]||0)+1;
+        let hasSequence=false;
 
-            if(n<=15) quartiles[0]++;
-            else if(n<=30) quartiles[1]++;
-            else if(n<=45) quartiles[2]++;
-            else quartiles[3]++;
 
-            if(i>0 && numbers[i]-numbers[i-1]===1){
-                sequenceGames++;
+        for(
+            let i=0;
+            i<numbers.length;
+            i++
+        ){
+
+            const n=
+                numbers[i];
+
+
+            frequency[n]=
+                (frequency[n]||0)+1;
+
+
+            if(n<=15)
+                quartiles[0]++;
+
+            else if(n<=30)
+                quartiles[1]++;
+
+            else if(n<=45)
+                quartiles[2]++;
+
+            else
+                quartiles[3]++;
+
+
+            if(
+                i>0 &&
+                numbers[i]-
+                numbers[i-1]===1
+            ){
+
+                hasSequence=true;
             }
         }
+
+
+        if(hasSequence){
+            sequenceGames++;
+        }
+
     });
 
-    const avgSum=totalSum/games.length;
 
-    document.getElementById('avgSum').textContent=
+    const avgSum=
+        totalSum/games.length;
+
+
+    document.getElementById(
+        'avgSum'
+    ).textContent=
         avgSum.toFixed(1);
 
-    document.getElementById('evenOdd').textContent=
+
+    document.getElementById(
+        'evenOdd'
+    ).textContent=
         `${totalEven} / ${totalOdd}`;
 
-    document.getElementById('sequenceGames').textContent=
+
+    document.getElementById(
+        'sequenceGames'
+    ).textContent=
         sequenceGames;
 
-    document.getElementById('q1').textContent=quartiles[0];
-    document.getElementById('q2').textContent=quartiles[1];
-    document.getElementById('q3').textContent=quartiles[2];
-    document.getElementById('q4').textContent=quartiles[3];
+
+    document.getElementById(
+        'q1'
+    ).textContent=
+        quartiles[0];
+
+
+    document.getElementById(
+        'q2'
+    ).textContent=
+        quartiles[1];
+
+
+    document.getElementById(
+        'q3'
+    ).textContent=
+        quartiles[2];
+
+
+    document.getElementById(
+        'q4'
+    ).textContent=
+        quartiles[3];
 
 
     /*
-      Sobreposição média entre jogos
+      Sobreposição média.
     */
 
     let overlapTotal=0;
     let overlapCount=0;
 
-    for(let i=0;i<games.length;i++){
 
-        for(let j=i+1;j<games.length;j++){
+    for(
+        let i=0;
+        i<games.length;
+        i++
+    ){
 
-            const a=new Set(games[i].numbers);
+        for(
+            let j=i+1;
+            j<games.length;
+            j++
+        ){
 
-            const common=games[j].numbers.filter(n=>a.has(n)).length;
+            const a=
+                new Set(
+                    games[i].numbers
+                );
+
+
+            const common=
+                games[j].numbers.filter(
+                    n=>a.has(n)
+                ).length;
+
 
             overlapTotal+=common;
+
             overlapCount++;
         }
     }
 
-    const avgOverlap=
-        overlapCount?overlapTotal/overlapCount:0;
 
-    document.getElementById('overlap').textContent=
+    const avgOverlap=
+        overlapCount
+        ? overlapTotal/overlapCount
+        : 0;
+
+
+    document.getElementById(
+        'overlap'
+    ).textContent=
         avgOverlap.toFixed(2);
 
 
     /*
-      Números mais frequentes
+      Frequência.
     */
 
-    const sortedFrequency=Object.entries(frequency)
-        .sort((a,b)=>b[1]-a[1]);
+    const sortedFrequency=
+        Object.entries(frequency)
+        .sort(
+            (a,b)=>b[1]-a[1]
+        );
+
 
     let html='';
 
+
     if(sortedFrequency.length){
 
-        const top=sortedFrequency.slice(0,10);
+        const top=
+            sortedFrequency.slice(
+                0,
+                10
+            );
+
 
         html+=`
+
             <div class="success">
-                <strong>Números mais presentes nos jogos:</strong>
-                ${top.map(([n,f])=>
+
+                <strong>
+                    Números mais presentes
+                    nos jogos:
+                </strong>
+
+                ${top.map(
+                    ([n,f])=>
                     `${String(n).padStart(2,'0')} (${f}x)`
                 ).join(' · ')}
+
             </div>
+
         `;
     }
 
+
     html+=`
+
         <div class="warning">
-            <strong>Como interpretar:</strong>
-            a análise de soma, pares/ímpares, quartis,
-            sequências e frequência serve para descrever e
-            organizar os jogos. Nenhum desses critérios altera
-            a probabilidade matemática de uma combinação individual
+
+            <strong>
+                Como interpretar:
+            </strong>
+
+            a análise de soma,
+            pares/ímpares,
+            quartis,
+            sequências e frequência
+            serve para descrever e organizar
+            os jogos.
+
+            Nenhum desses critérios altera
+            a probabilidade matemática
+            de uma combinação individual
             ser sorteada.
+
         </div>
+
     `;
 
-    document.getElementById('analysisText').innerHTML=html;
+
+    document.getElementById(
+        'analysisText'
+    ).innerHTML=html;
 }
 
 
@@ -1478,112 +2293,181 @@ function checkDraw(){
 
     if(!games.length){
 
-        alert('Gere os jogos antes de fazer a apuração.');
+        alert(
+            'Gere ou adicione jogos antes de fazer a apuração.'
+        );
 
         return;
     }
 
-    const input=document.getElementById('drawResult').value;
 
-    let draw=uniqueNumbers(parseNumbers(input));
+    const input=
+        document.getElementById(
+            'drawResult'
+        ).value;
+
+
+    let draw=
+        uniqueNumbers(
+            parseNumbers(input)
+        );
+
 
     if(draw.length!==6){
 
-        alert('Digite exatamente 6 números diferentes entre 01 e 60.');
+        alert(
+            'Digite exatamente 6 números diferentes entre 01 e 60.'
+        );
 
         return;
     }
 
-    draw=sortNumbers(draw);
+
+    draw=
+        sortNumbers(draw);
+
 
     let sena=0;
     let quina=0;
     let quadra=0;
 
+
     const results=[];
 
-    games.forEach((game,index)=>{
 
-        const hits=game.numbers.filter(n=>draw.includes(n)).length;
+    games.forEach(
+        (game,index)=>{
 
-        /*
-          Um jogo múltiplo pode conter várias
-          combinações de Sena/Quina/Quadra.
-        */
+        const hits=
+            game.numbers.filter(
+                n=>draw.includes(n)
+            ).length;
+
 
         let sixCount=0;
         let fiveCount=0;
         let fourCount=0;
 
+
         if(game.numbers.length===6){
 
-            if(hits===6) sixCount=1;
-            if(hits===5) fiveCount=1;
-            if(hits===4) fourCount=1;
+            if(hits===6)
+                sixCount=1;
 
-        }else{
+            if(hits===5)
+                fiveCount=1;
 
-            const n=game.numbers.length;
+            if(hits===4)
+                fourCount=1;
 
-            /*
-              Quantas combinações internas
-              acertam exatamente 6, 5 ou 4.
+        }
+        else{
 
-              Se o jogo contém h números do sorteio:
+            const n=
+                game.numbers.length;
 
-              Sena = C(h,6)
-              Quina = C(h,5) * C(n-h,1)
-              Quadra = C(h,4) * C(n-h,2)
-            */
 
-            sixCount=combination(hits,6);
+            sixCount=
+                combination(
+                    hits,
+                    6
+                );
+
 
             fiveCount=
-                combination(hits,5)*
-                combination(n-hits,1);
+                combination(
+                    hits,
+                    5
+                )*
+                combination(
+                    n-hits,
+                    1
+                );
+
 
             fourCount=
-                combination(hits,4)*
-                combination(n-hits,2);
+                combination(
+                    hits,
+                    4
+                )*
+                combination(
+                    n-hits,
+                    2
+                );
         }
+
 
         sena+=sixCount;
         quina+=fiveCount;
         quadra+=fourCount;
 
+
         results.push({
+
             game:index+1,
+
             hits,
+
             sena:sixCount,
+
             quina:fiveCount,
+
             quadra:fourCount
+
         });
+
     });
 
+
     let html=`
+
         <div class="success">
-            <strong>Resultado:</strong>
+
+            <strong>
+                Resultado:
+            </strong>
+
             ${formatNumbers(draw)}
+
             <br><br>
 
             🎯 Sena:
-            <strong>${sena}</strong> combinação(ões)
+            <strong>
+                ${sena}
+            </strong>
+            combinação(ões)
+
             <br>
 
             🥈 Quina:
-            <strong>${quina}</strong> combinação(ões)
+            <strong>
+                ${quina}
+            </strong>
+            combinação(ões)
+
             <br>
 
             🥉 Quadra:
-            <strong>${quadra}</strong> combinação(ões)
+            <strong>
+                ${quadra}
+            </strong>
+            combinação(ões)
+
         </div>
+
     `;
 
+
     html+=`
+
         <br>
+
         <div class="table-wrap">
+
         <table>
+
         <thead>
+
         <tr>
             <th>Jogo</th>
             <th>Acertos</th>
@@ -1591,33 +2475,54 @@ function checkDraw(){
             <th>Quina</th>
             <th>Quadra</th>
         </tr>
+
         </thead>
+
         <tbody>
+
     `;
+
 
     results.forEach(r=>{
 
         if(r.hits>=4){
 
             html+=`
+
             <tr>
+
                 <td>${r.game}</td>
+
                 <td>${r.hits}</td>
+
                 <td>${r.sena}</td>
+
                 <td>${r.quina}</td>
+
                 <td>${r.quadra}</td>
+
             </tr>
+
             `;
         }
+
     });
 
+
     html+=`
+
         </tbody>
+
         </table>
+
         </div>
+
     `;
 
-    document.getElementById('drawResultBox').innerHTML=html;
+
+    document.getElementById(
+        'drawResultBox'
+    ).innerHTML=html;
 }
 
 
@@ -1629,98 +2534,199 @@ function calculatePrize(){
 
     if(!games.length){
 
-        alert('Gere os jogos antes de simular a premiação.');
+        alert(
+            'Gere ou adicione jogos antes de simular a premiação.'
+        );
 
         return;
     }
 
-    const sena=Number(document.getElementById('prizeSena').value)||0;
-    const otherSena=Number(document.getElementById('otherSena').value)||0;
 
-    const quina=Number(document.getElementById('prizeQuina').value)||0;
-    const quadra=Number(document.getElementById('prizeQuadra').value)||0;
+    const sena=
+        Number(
+            document.getElementById(
+                'prizeSena'
+            ).value
+        )||0;
 
-    /*
-      Esta simulação utiliza o valor informado
-      pelo usuário como prêmio da respectiva faixa.
-    */
+
+    const otherSena=
+        Number(
+            document.getElementById(
+                'otherSena'
+            ).value
+        )||0;
+
+
+    const quina=
+        Number(
+            document.getElementById(
+                'prizeQuina'
+            ).value
+        )||0;
+
+
+    const quadra=
+        Number(
+            document.getElementById(
+                'prizeQuadra'
+            ).value
+        )||0;
+
 
     let total=0;
 
+
     if(otherSena>=0){
 
-        const winners=otherSena+1;
+        const winners=
+            otherSena+1;
+
 
         if(sena>0){
-            total+=sena/winners;
+
+            total+=
+                sena/winners;
         }
     }
 
-    /*
-      Para Quina e Quadra, considera-se o valor
-      informado por premiação de cada combinação.
-    */
 
     let quinaCount=0;
     let quadraCount=0;
 
-    const drawInput=document.getElementById('drawResult').value;
 
-    if(parseNumbers(drawInput).length===6){
+    const drawInput=
+        document.getElementById(
+            'drawResult'
+        ).value;
 
-        const draw=sortNumbers(uniqueNumbers(parseNumbers(drawInput)));
+
+    if(
+        parseNumbers(drawInput).length===6
+    ){
+
+        const draw=
+            sortNumbers(
+                uniqueNumbers(
+                    parseNumbers(
+                        drawInput
+                    )
+                )
+            );
+
 
         games.forEach(game=>{
 
-            const hits=game.numbers.filter(n=>draw.includes(n)).length;
+            const hits=
+                game.numbers.filter(
+                    n=>draw.includes(n)
+                ).length;
 
-            const n=game.numbers.length;
+
+            const n=
+                game.numbers.length;
+
 
             quinaCount+=
-                combination(hits,5)*
-                combination(n-hits,1);
+                combination(
+                    hits,
+                    5
+                )*
+                combination(
+                    n-hits,
+                    1
+                );
+
 
             quadraCount+=
-                combination(hits,4)*
-                combination(n-hits,2);
+                combination(
+                    hits,
+                    4
+                )*
+                combination(
+                    n-hits,
+                    2
+                );
+
         });
     }
 
-    total+=quina*quinaCount;
-    total+=quadra*quadraCount;
 
-    const quotas=participants.reduce(
-        (sum,p)=>sum+Number(p.quotas||0),
-        0
-    );
+    total+=
+        quina*quinaCount;
 
-    const perQuota=quotas>0?total/quotas:0;
 
-    document.getElementById('prizeResult').innerHTML=`
+    total+=
+        quadra*quadraCount;
+
+
+    const quotas=
+        participants.reduce(
+            (sum,p)=>
+                sum+
+                Number(
+                    p.quotas||0
+                ),
+            0
+        );
+
+
+    const perQuota=
+        quotas>0
+        ? total/quotas
+        : 0;
+
+
+    document.getElementById(
+        'prizeResult'
+    ).innerHTML=`
+
         <div class="success">
-            <strong>Simulação:</strong><br><br>
 
-            Valor total estimado do bolão:
-            <strong>${money(total)}</strong>
+            <strong>
+                Simulação:
+            </strong>
+
+            <br><br>
+
+            Valor total estimado
+            do bolão:
+
+            <strong>
+                ${money(total)}
+            </strong>
 
             <br><br>
 
             Total de cotas:
-            <strong>${quotas}</strong>
+
+            <strong>
+                ${quotas}
+            </strong>
 
             <br><br>
 
-            Valor estimado por cota:
-            <strong>${money(perQuota)}</strong>
+            Valor estimado
+            por cota:
+
+            <strong>
+                ${money(perQuota)}
+            </strong>
 
             <br><br>
 
             <small>
-            A simulação depende dos valores de prêmio informados,
-            da quantidade de ganhadores e do resultado inserido.
-            Não representa uma previsão oficial da Caixa.
+
+                A simulação depende
+                dos valores de prêmio
+                informados,
+                da quantidade de ganhadores
+                e do resultado inserido.
+
             </small>
+
         </div>
+
     `;
 }
 
@@ -1733,69 +2739,148 @@ function exportExcel(){
 
     if(!games.length){
 
-        alert('Gere os jogos antes de exportar.');
+        alert(
+            'Gere ou adicione jogos antes de exportar.'
+        );
 
         return;
     }
 
+
     const jogos=[];
 
-    games.forEach((game,index)=>{
 
-        const numbers=sortNumbers(game.numbers);
+    games.forEach(
+        (game,index)=>{
 
-        const even=numbers.filter(n=>n%2===0).length;
+        const numbers=
+            sortNumbers(
+                game.numbers
+            );
 
-        const odd=numbers.length-even;
 
-        const sum=numbers.reduce((a,b)=>a+b,0);
+        const even=
+            numbers.filter(
+                n=>n%2===0
+            ).length;
+
+
+        const odd=
+            numbers.length-even;
+
+
+        const sum=
+            numbers.reduce(
+                (a,b)=>a+b,
+                0
+            );
+
 
         jogos.push({
+
             Jogo:index+1,
+
             Tipo:game.type,
-            Numeros:formatNumbers(numbers),
-            Combinacoes_de_6:game.combinations,
-            Custo:game.cost,
-            Soma:sum,
-            Pares:even,
-            Impares:odd,
-            Q1:numbers.filter(n=>n<=15).length,
-            Q2:numbers.filter(n=>n>=16&&n<=30).length,
-            Q3:numbers.filter(n=>n>=31&&n<=45).length,
-            Q4:numbers.filter(n=>n>=46).length
+
+            Origem:
+                game.origin || '',
+
+            Numeros:
+                formatNumbers(numbers),
+
+            Combinacoes_de_6:
+                game.combinations,
+
+            Custo:
+                game.cost,
+
+            Soma:
+                sum,
+
+            Pares:
+                even,
+
+            Impares:
+                odd,
+
+            Q1:
+                numbers.filter(
+                    n=>n<=15
+                ).length,
+
+            Q2:
+                numbers.filter(
+                    n=>n>=16&&n<=30
+                ).length,
+
+            Q3:
+                numbers.filter(
+                    n=>n>=31&&n<=45
+                ).length,
+
+            Q4:
+                numbers.filter(
+                    n=>n>=46
+                ).length
+
         });
     });
 
 
     const analise=[{
 
-        Participantes:participants.length,
+        Participantes:
+            participants.length,
 
-        Cotas:participants.reduce(
-            (sum,p)=>sum+Number(p.quotas||0),0
-        ),
+        Cotas:
+            participants.reduce(
+                (sum,p)=>
+                    sum+
+                    Number(
+                        p.quotas||0
+                    ),
+                0
+            ),
 
-        Orcamento:Number(
-            document.getElementById('betBudget').value
-        )||0,
+        Orcamento:
+            Number(
+                document.getElementById(
+                    'betBudget'
+                ).value
+            )||0,
 
-        Jogos:games.length,
+        Jogos:
+            games.length,
 
-        Combinacoes:games.reduce(
-            (sum,g)=>sum+g.combinations,0
-        ),
+        Combinacoes:
+            games.reduce(
+                (sum,g)=>
+                    sum+
+                    g.combinations,
+                0
+            ),
 
-        Custo:games.reduce(
-            (sum,g)=>sum+g.cost,0
-        ),
+        Custo:
+            games.reduce(
+                (sum,g)=>
+                    sum+
+                    g.cost,
+                0
+            ),
 
-        Soma_Media:Number(
-            document.getElementById('avgSum').textContent
-        )||0,
+        Soma_Media:
+            Number(
+                document.getElementById(
+                    'avgSum'
+                ).textContent
+            )||0,
 
-        Sobreposicao_Media:Number(
-            document.getElementById('overlap').textContent
-        )||0
+        Sobreposicao_Media:
+            Number(
+                document.getElementById(
+                    'overlap'
+                ).textContent
+            )||0
 
     }];
 
@@ -1810,58 +2895,90 @@ function exportExcel(){
         {
             Item:'Total de cotas',
             Valor:participants.reduce(
-                (sum,p)=>sum+Number(p.quotas||0),0
+                (sum,p)=>
+                    sum+
+                    Number(
+                        p.quotas||0
+                    ),
+                0
             )
         },
 
         {
             Item:'Valor por cota',
             Valor:Number(
-                document.getElementById('quotaValue').value
+                document.getElementById(
+                    'quotaValue'
+                ).value
             )||0
         },
 
         {
             Item:'Orçamento',
             Valor:Number(
-                document.getElementById('betBudget').value
+                document.getElementById(
+                    'betBudget'
+                ).value
             )||0
         },
 
         {
             Item:'Jogos simples',
-            Valor:games.filter(g=>g.numbers.length===6).length
+            Valor:games.filter(
+                g=>g.numbers.length===6
+            ).length
         },
 
         {
             Item:'Jogos múltiplos',
-            Valor:games.filter(g=>g.numbers.length>6).length
+            Valor:games.filter(
+                g=>g.numbers.length>6
+            ).length
         },
 
         {
             Item:'Combinações de 6',
             Valor:games.reduce(
-                (sum,g)=>sum+g.combinations,0
+                (sum,g)=>
+                    sum+
+                    g.combinations,
+                0
             )
         },
 
         {
             Item:'Custo total',
             Valor:games.reduce(
-                (sum,g)=>sum+g.cost,0
+                (sum,g)=>
+                    sum+
+                    g.cost,
+                0
             )
         }
 
     ];
 
 
-    const wb=XLSX.utils.book_new();
+    const wb=
+        XLSX.utils.book_new();
 
-    const wsJogos=XLSX.utils.json_to_sheet(jogos);
 
-    const wsAnalise=XLSX.utils.json_to_sheet(analise);
+    const wsJogos=
+        XLSX.utils.json_to_sheet(
+            jogos
+        );
 
-    const wsResumo=XLSX.utils.json_to_sheet(resumo);
+
+    const wsAnalise=
+        XLSX.utils.json_to_sheet(
+            analise
+        );
+
+
+    const wsResumo=
+        XLSX.utils.json_to_sheet(
+            resumo
+        );
 
 
     XLSX.utils.book_append_sheet(
@@ -1870,11 +2987,13 @@ function exportExcel(){
         'JOGOS PARA APOSTAR'
     );
 
+
     XLSX.utils.book_append_sheet(
         wb,
         wsAnalise,
         'ANÁLISE'
     );
+
 
     XLSX.utils.book_append_sheet(
         wb,
@@ -1898,32 +3017,72 @@ function exportCSV(){
 
     if(!games.length){
 
-        alert('Gere os jogos antes de exportar.');
+        alert(
+            'Gere ou adicione jogos antes de exportar.'
+        );
 
         return;
     }
 
+
     let csv=
-        'Jogo;Tipo;Números;Combinações;Custo;Soma;Pares;Ímpares;Q1;Q2;Q3;Q4\n';
+        'Jogo;Tipo;Origem;Números;Combinações;Custo;Soma;Pares;Ímpares;Q1;Q2;Q3;Q4\n';
 
-    games.forEach((game,index)=>{
 
-        const numbers=sortNumbers(game.numbers);
+    games.forEach(
+        (game,index)=>{
 
-        const even=numbers.filter(n=>n%2===0).length;
+        const numbers=
+            sortNumbers(
+                game.numbers
+            );
 
-        const odd=numbers.length-even;
 
-        const sum=numbers.reduce((a,b)=>a+b,0);
+        const even=
+            numbers.filter(
+                n=>n%2===0
+            ).length;
 
-        const q1=numbers.filter(n=>n<=15).length;
-        const q2=numbers.filter(n=>n>=16&&n<=30).length;
-        const q3=numbers.filter(n=>n>=31&&n<=45).length;
-        const q4=numbers.filter(n=>n>=46).length;
+
+        const odd=
+            numbers.length-even;
+
+
+        const sum=
+            numbers.reduce(
+                (a,b)=>a+b,
+                0
+            );
+
+
+        const q1=
+            numbers.filter(
+                n=>n<=15
+            ).length;
+
+
+        const q2=
+            numbers.filter(
+                n=>n>=16&&n<=30
+            ).length;
+
+
+        const q3=
+            numbers.filter(
+                n=>n>=31&&n<=45
+            ).length;
+
+
+        const q4=
+            numbers.filter(
+                n=>n>=46
+            ).length;
+
 
         csv+=
             `${index+1};`+
             `${game.type};`+
+            `${game.origin||''};`+
             `"${formatNumbers(numbers)}";`+
             `${game.combinations};`+
             `${game.cost.toFixed(2)};`+
@@ -1933,41 +3092,64 @@ function exportCSV(){
             `${q1};${q2};${q3};${q4}\n`;
     });
 
-    const blob=new Blob(
-        ['\ufeff'+csv],
-        {type:'text/csv;charset=utf-8;'}
-    );
 
-    const url=URL.createObjectURL(blob);
+    const blob=
+        new Blob(
+            ['\ufeff'+csv],
+            {
+                type:
+                'text/csv;charset=utf-8;'
+            }
+        );
 
-    const a=document.createElement('a');
+
+    const url=
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const a=
+        document.createElement(
+            'a'
+        );
+
 
     a.href=url;
 
-    a.download='Mega_Analyzer_Bolao.csv';
+    a.download=
+        'Mega_Analyzer_Bolao.csv';
+
 
     a.click();
+
 
     URL.revokeObjectURL(url);
 }
 
 
 /* =========================
-   COPIAR
+   COPIAR JOGOS
 ========================= */
 
 function copyGames(){
 
     if(!games.length){
 
-        alert('Gere os jogos antes de copiar.');
+        alert(
+            'Gere ou adicione jogos antes de copiar.'
+        );
 
         return;
     }
 
-    let text='MEGA ANALYZER — JOGOS PARA APOSTAR\n\n';
 
-    games.forEach((game,index)=>{
+    let text=
+        'MEGA ANALYZER — JOGOS PARA APOSTAR\n\n';
+
+
+    games.forEach(
+        (game,index)=>{
 
         text+=
             `${String(index+1).padStart(3,'0')} — `+
@@ -1975,15 +3157,22 @@ function copyGames(){
             `${formatNumbers(game.numbers)}\n`;
     });
 
+
     navigator.clipboard.writeText(text)
+
         .then(()=>{
 
-            alert('Jogos copiados para a área de transferência.');
+            alert(
+                'Jogos copiados para a área de transferência.'
+            );
 
         })
+
         .catch(()=>{
 
-            alert('Não foi possível copiar automaticamente.');
+            alert(
+                'Não foi possível copiar automaticamente.'
+            );
 
         });
 }
@@ -1997,16 +3186,35 @@ function clearGames(){
 
     games=[];
 
-    document.getElementById('resultsSection')
-        .classList.add('hidden');
 
-    document.getElementById('gamesTable').innerHTML='';
+    document.getElementById(
+        'resultsSection'
+    ).classList.add('hidden');
 
-    document.getElementById('generationMessage').innerHTML='';
 
-    document.getElementById('drawResultBox').innerHTML='';
+    document.getElementById(
+        'gamesTable'
+    ).innerHTML='';
 
-    document.getElementById('prizeResult').innerHTML='';
+
+    document.getElementById(
+        'generationMessage'
+    ).innerHTML='';
+
+
+    document.getElementById(
+        'manualMessage'
+    ).innerHTML='';
+
+
+    document.getElementById(
+        'drawResultBox'
+    ).innerHTML='';
+
+
+    document.getElementById(
+        'prizeResult'
+    ).innerHTML='';
 }
 
 
@@ -2014,19 +3222,37 @@ function clearGames(){
    EVENTOS
 ========================= */
 
-document.getElementById('quotaValue')
-    .addEventListener('input',updateSummary);
+document.getElementById(
+    'quotaValue'
+).addEventListener(
+    'input',
+    updateSummary
+);
 
-document.getElementById('betBudget')
-    .addEventListener('input',updateSummary);
+
+document.getElementById(
+    'betBudget'
+).addEventListener(
+    'input',
+    updateSummary
+);
 
 
 /* =========================
    INICIALIZAÇÃO
 ========================= */
 
-addParticipant('Participante 1',1);
-addParticipant('Participante 2',1);
+addParticipant(
+    'Participante 1',
+    1
+);
+
+
+addParticipant(
+    'Participante 2',
+    1
+);
+
 
 updateSummary();
 
