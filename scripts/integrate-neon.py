@@ -1,3 +1,4 @@
+# Triggered from GitHub so the integration patch runs after the workflow is installed.
 from pathlib import Path
 
 path = Path('index.html')
@@ -106,13 +107,6 @@ async function restoreState(state){
     if(state.drawResult && typeof window.checkDraw==='function') window.checkDraw();
     if(typeof window.updateSummary==='function') window.updateSummary();
   } finally { restoring=false; }
-}
-
-async function listContests(){
-  const user=await currentUser(); if(!user) return [];
-  const {data,error}=await neon.from('mega_contests').select('contest_number,updated_at').order('updated_at',{ascending:false});
-  if(error) throw error;
-  return data||[];
 }
 
 async function loadContest(){
