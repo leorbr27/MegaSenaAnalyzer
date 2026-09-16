@@ -1,4 +1,4 @@
-name: Validate Neon integration
+name: Remove authentication from Mega Analyzer
 
 on:
   push:
@@ -8,48 +8,63 @@ permissions:
   contents: write
 
 jobs:
-  validate:
+  remove-auth:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fix email signup UI and validation
+      - name: Remove authentication block and code
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
+
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
 
-          old = '''  <div class="field">\n    <label>Conta</label>\n    <input id="neonEmail" type="email" placeholder="E-mail" autocomplete="username">\n  </div>\n  <div class="field">\n    <label>Senha</label>\n    <input id="neonPassword" type="password" placeholder="Senha" autocomplete="current-password">\n  </div>'''
-          new = '''  <div class="field">\n    <label>E-mail</label>\n    <input id="neonEmail" type="email" placeholder="seu@email.com" autocomplete="email" required>\n  </div>\n  <div class="field">\n    <label>Senha (mínimo 8 caracteres)</label>\n    <input id="neonPassword" type="password" placeholder="Crie uma senha" autocomplete="new-password" minlength="8" required>\n  </div>'''
-          if old in text:
-              text = text.replace(old, new, 1)
+          # Remove the complete visible authentication/saving account panel.
+          text = re.sub(
+              r'\n?<!-- NEON-MEGA-INTEGRATION -->.*?</section>\n\n',
+              '\n',
+              text,
+              count=1,
+              flags=re.S
+          )
 
-          old_signup = '''$('neonSignUp').onclick=async()=>{ try{ const r=await neon.auth.signUp.email({email:$('neonEmail').value.trim(),password:$('neonPassword').value,name:$('neonEmail').value.trim().split('@')[0]}); if(r?.error) throw r.error; await refreshAuth(); msg('Conta criada. Você já pode usar o Mega Analyzer.','success'); }catch(e){msg('Não foi possível criar a conta: '+(e.message||e),'danger');} };'''
-          new_signup = '''$('neonSignUp').onclick=async()=>{\n  const email=$('neonEmail').value.trim();\n  const password=$('neonPassword').value;\n  if(!email){ msg('Informe seu e-mail.','warning'); $('neonEmail').focus(); return; }\n  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){ msg('Informe um e-mail válido.','warning'); $('neonEmail').focus(); return; }\n  if(password.length<8){ msg('A senha precisa ter pelo menos 8 caracteres.','warning'); $('neonPassword').focus(); return; }\n  try{\n    const r=await neon.auth.signUp.email({email,password,name:email.split('@')[0]});\n    if(r?.error){\n      const code=r.error.code||'';\n      const message=r.error.message||'';\n      if(code==='USER_ALREADY_EXISTS' || /already exists|already registered|unique/i.test(message)) throw new Error('Este e-mail já possui uma conta. Use “Entrar” para acessar.');\n      if(code==='PASSWORD_TOO_SHORT' || /password.*(8|short)|too short/i.test(message)) throw new Error('A senha precisa ter pelo menos 8 caracteres.');\n      throw new Error(message||'O servidor recusou o cadastro.');\n    }\n    await refreshAuth();\n    $('neonPassword').value='';\n    msg('Conta criada com sucesso. Agora você pode salvar seus concursos.','success');\n  }catch(e){ msg('Não foi possível criar a conta: '+(e.message||e),'danger'); }\n};'''
-          if old_signup in text:
-              text = text.replace(old_signup, new_signup, 1)
+          # Remove the Neon authentication/integration script block.
+          marker = '<script type="module">'
+          start = text.find(marker)
+          if start != -1:
+              end = text.find('</script>', start)
+              if end != -1:
+                  block = text[start:end + len('</script>')]
+                  if 'neon.auth' in block or 'NEON_AUTH_URL' in block or 'mega_contests' in block:
+                      text = text[:start] + text[end + len('</script>'):]
 
           path.write_text(text, encoding='utf-8')
           PY
 
-      - name: Validate integration marker
+      - name: Verify authentication was removed
         run: |
-          grep -q '<!-- NEON-MEGA-INTEGRATION -->' index.html
-          grep -q 'quotaValue' index.html
-          grep -q 'mega_contests' index.html
-          grep -q 'A senha precisa ter pelo menos 8 caracteres' index.html
-          echo "Neon integration markers validated."
+          ! grep -q 'neonEmail' index.html
+          ! grep -q 'neonPassword' index.html
+          ! grep -q 'neonSignIn' index.html
+          ! grep -q 'neonSignUp' index.html
+          ! grep -q 'neonGoogle' index.html
+          ! grep -q 'neonForgot' index.html
+          ! grep -q 'NEON_AUTH_URL' index.html
+          ! grep -q 'mega_contests' index.html
+          echo "Authentication block removed successfully."
 
-      - name: Commit signup fix
+      - name: Commit removal
         run: |
           if git diff --quiet -- index.html; then
-            echo "No changes needed."
+            echo "No authentication code found; nothing to change."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Fix email account registration"
+          git commit -m "Remove authentication from Mega Analyzer"
           git push
