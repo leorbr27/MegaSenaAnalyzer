@@ -373,6 +373,7 @@ footer{
   <button id="neonSignIn">🔐 Entrar</button>
   <button id="neonSignUp" class="secondary">Criar conta</button>
   <button id="neonGoogle" class="light">Continuar com Google</button>
+  <button id="neonForgot" class="light">🔑 Esqueci minha senha</button>
   <button id="neonLoad" class="green">📂 Abrir concurso</button>
   <button id="neonSave" class="green">💾 Salvar agora</button>
   <button id="neonLogout" class="red">Sair</button>
@@ -3443,7 +3444,53 @@ $('neonSignUp').onclick=async()=>{
     msg('Conta criada com sucesso. Agora você pode salvar seus concursos.','success');
   }catch(e){ msg('Não foi possível criar a conta: '+(e.message||e),'danger'); }
 };
-$('neonGoogle').onclick=async()=>{ try{ await neon.auth.signIn.social({provider:'google',callbackURL:location.href}); }catch(e){msg('Não foi possível iniciar o Google: '+(e.message||e),'danger');} };
+$('neonGoogle').onclick=async()=>{
+  try{
+    const callbackURL = new URL('./', location.href).href;
+    await neon.auth.signIn.social({provider:'google',callbackURL});
+  }catch(e){
+    msg('Não foi possível iniciar o Google: '+(e.message||e),'danger');
+  }
+};
+
+$('neonForgot').onclick=async()=>{
+  const email=$('neonEmail').value.trim();
+  if(!email){
+    msg('Digite seu e-mail primeiro para receber o link de redefinição.','warning');
+    $('neonEmail').focus();
+    return;
+  }
+  try{
+    const redirectTo=new URL('./',location.href).href;
+    const r=await neon.auth.requestPasswordReset({email,redirectTo});
+    if(r?.error) throw r.error;
+    msg('Se esse e-mail estiver cadastrado, você receberá um link para criar uma nova senha. Verifique também a pasta de spam.','success');
+  }catch(e){
+    msg('Não foi possível solicitar a redefinição: '+(e.message||e),'danger');
+  }
+};
+
+async function handlePasswordReset(){
+  const params=new URLSearchParams(location.search);
+  const token=params.get('token');
+  if(!token) return false;
+  const newPassword=window.prompt('Digite a nova senha (mínimo 8 caracteres):');
+  if(newPassword===null) return true;
+  if(newPassword.length<8){
+    msg('A nova senha precisa ter pelo menos 8 caracteres.','warning');
+    return true;
+  }
+  try{
+    const r=await neon.auth.resetPassword({newPassword,token});
+    if(r?.error) throw r.error;
+    history.replaceState({},document.title,location.pathname);
+    $('neonPassword').value=newPassword;
+    msg('Senha redefinida com sucesso. Agora clique em “Entrar”.','success');
+  }catch(e){
+    msg('Não foi possível redefinir a senha: '+(e.message||e),'danger');
+  }
+  return true;
+}
 $('neonLogout').onclick=async()=>{ await neon.auth.signOut(); activeContest=0; localStorage.removeItem('megaAnalyzerContest'); await refreshAuth(); msg('Você saiu da conta.','info-box'); };
 $('neonLoad').onclick=()=>loadContest().catch(e=>msg('Erro ao abrir: '+(e.message||e),'danger'));
 $('neonSave').onclick=()=>saveContest(false).catch(e=>msg('Erro ao salvar: '+(e.message||e),'danger'));
@@ -3451,8 +3498,9 @@ $('contestNumber').addEventListener('change',()=>{ if(Number($('contestNumber').
 document.addEventListener('input',e=>{ if(e.target.matches('#quotaValue,#betBudget,#simpleBetPrice,#strategy,#generationMode,#sixGames,#multipleGames,#multipleNumbers,#prizeSena,#otherSena,#prizeQuina,#prizeQuadra,#drawResult')) scheduleSave(); });
 document.addEventListener('change',e=>{ if(e.target.matches('#participants input,#quotaValue,#betBudget,#simpleBetPrice,#strategy,#generationMode,#sixGames,#multipleGames,#multipleNumbers,#prizeSena,#otherSena,#prizeQuina,#prizeQuadra,#drawResult')) scheduleSave(); });
 
+const resetHandled=await handlePasswordReset();
 await refreshAuth();
-if(activeContest && await currentUser()){ $('contestNumber').value=activeContest; try{ await loadContest(); }catch(e){ msg('Não foi possível carregar o último concurso: '+(e.message||e),'danger'); } }
+if(!resetHandled && activeContest && await currentUser()){ $('contestNumber').value=activeContest; try{ await loadContest(); }catch(e){ msg('Não foi possível carregar o último concurso: '+(e.message||e),'danger'); } }
 </script>
 
 </body>
