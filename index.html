@@ -357,12 +357,12 @@ footer{
     <input id="contestNumber" type="number" min="1" step="1" placeholder="Ex.: 2910">
   </div>
   <div class="field">
-    <label>Conta</label>
-    <input id="neonEmail" type="email" placeholder="E-mail" autocomplete="username">
+    <label>E-mail</label>
+    <input id="neonEmail" type="email" placeholder="seu@email.com" autocomplete="email" required>
   </div>
   <div class="field">
-    <label>Senha</label>
-    <input id="neonPassword" type="password" placeholder="Senha" autocomplete="current-password">
+    <label>Senha (mínimo 8 caracteres)</label>
+    <input id="neonPassword" type="password" placeholder="Crie uma senha" autocomplete="new-password" minlength="8" required>
   </div>
   <div class="field">
     <label>Status</label>
@@ -3423,7 +3423,26 @@ async function refreshAuth(){
 }
 
 $('neonSignIn').onclick=async()=>{ try{ const r=await neon.auth.signIn.email({email:$('neonEmail').value.trim(),password:$('neonPassword').value}); if(r?.error) throw r.error; await refreshAuth(); msg('Login realizado.','success'); if(activeContest) await loadContest(); }catch(e){msg('Não foi possível entrar: '+(e.message||e),'danger');} };
-$('neonSignUp').onclick=async()=>{ try{ const r=await neon.auth.signUp.email({email:$('neonEmail').value.trim(),password:$('neonPassword').value,name:$('neonEmail').value.trim().split('@')[0]}); if(r?.error) throw r.error; await refreshAuth(); msg('Conta criada. Você já pode usar o Mega Analyzer.','success'); }catch(e){msg('Não foi possível criar a conta: '+(e.message||e),'danger');} };
+$('neonSignUp').onclick=async()=>{
+  const email=$('neonEmail').value.trim();
+  const password=$('neonPassword').value;
+  if(!email){ msg('Informe seu e-mail.','warning'); $('neonEmail').focus(); return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ msg('Informe um e-mail válido.','warning'); $('neonEmail').focus(); return; }
+  if(password.length<8){ msg('A senha precisa ter pelo menos 8 caracteres.','warning'); $('neonPassword').focus(); return; }
+  try{
+    const r=await neon.auth.signUp.email({email,password,name:email.split('@')[0]});
+    if(r?.error){
+      const code=r.error.code||'';
+      const message=r.error.message||'';
+      if(code==='USER_ALREADY_EXISTS' || /already exists|already registered|unique/i.test(message)) throw new Error('Este e-mail já possui uma conta. Use “Entrar” para acessar.');
+      if(code==='PASSWORD_TOO_SHORT' || /password.*(8|short)|too short/i.test(message)) throw new Error('A senha precisa ter pelo menos 8 caracteres.');
+      throw new Error(message||'O servidor recusou o cadastro.');
+    }
+    await refreshAuth();
+    $('neonPassword').value='';
+    msg('Conta criada com sucesso. Agora você pode salvar seus concursos.','success');
+  }catch(e){ msg('Não foi possível criar a conta: '+(e.message||e),'danger'); }
+};
 $('neonGoogle').onclick=async()=>{ try{ await neon.auth.signIn.social({provider:'google',callbackURL:location.href}); }catch(e){msg('Não foi possível iniciar o Google: '+(e.message||e),'danger');} };
 $('neonLogout').onclick=async()=>{ await neon.auth.signOut(); activeContest=0; localStorage.removeItem('megaAnalyzerContest'); await refreshAuth(); msg('Você saiu da conta.','info-box'); };
 $('neonLoad').onclick=()=>loadContest().catch(e=>msg('Erro ao abrir: '+(e.message||e),'danger'));
